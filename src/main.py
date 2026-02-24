@@ -5,6 +5,7 @@ from guest import GameClient
 
 
 pygame.init()
+pygame.mouse.set_visible(False)
 
 
 winW,winH=960,640
@@ -22,16 +23,17 @@ pygame.display.set_caption("game")
 
 #載入
 mainmenuimg=pygame.image.load("assets/images/menus/mainmenu.png").convert()
-triangleimg=pygame.image.load("assets/triangle.png").convert_alpha()
+triangleimg=pygame.image.load("assets/images/triangle.png").convert_alpha()
 creatchartimg=pygame.image.load("assets/images/charts/creatchart.png").convert_alpha()
 joinchartimg=pygame.image.load("assets/images/charts/joinchart.png").convert_alpha()
 readymenuimg=pygame.image.load("assets/images/menus/readymenu1.png").convert()
 
+targetlogo=pygame.image.load("assets/images/targetlogo.png").convert_alpha()
 waiting_text=pygame.image.load("assets/images/texts/waiting_for_p2.png").convert_alpha()
 choose_text=pygame.image.load("assets/images/texts/choose_your_skills.png").convert_alpha()
 readycancel_text=pygame.image.load("assets/images/texts/readycancel.png").convert_alpha()
 starting_text=pygame.image.load("assets/images/texts/starting_in.png").convert_alpha()
-skillbox=pygame.image.load("assets/skill_box.png").convert()
+skillbox=pygame.image.load("assets/images/skill_box.png").convert()
 p1_text=pygame.image.load("assets/images/texts/p1.png").convert_alpha()
 p2_text=pygame.image.load("assets/images/texts/p2.png").convert_alpha()
 you_hint=pygame.image.load("assets/images/texts/youhint.png").convert_alpha()
@@ -230,6 +232,11 @@ def load_skill_img():
         path=f"assets/images/gameobjects/skill{skill_id}img.png"
         skill_img[skill_id]=pygame.image.load(path).convert_alpha()
 
+def draw_target_logo():
+    global mx,my
+    tar_rect=targetlogo.get_rect(center=(mx,my))
+    gameSurface.blit(targetlogo,tar_rect)
+
 gameobjects=[]
 def draw_game_objects():
     gameSurface.fill((119,221,255))
@@ -360,6 +367,7 @@ def main():
         elif screen_state=="in game":
             move_inputs()
             draw_game_objects()
+            draw_target_logo()
             screen.blit(gameSurface,(0,0))
 
 

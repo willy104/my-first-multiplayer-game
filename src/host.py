@@ -186,7 +186,7 @@ class GameServer(threading.Thread):
                         }
                     })
         
-        if len(self.clients)==2 and all(p["ready"] for p in self.clients.values()):#測試用
+        if len(self.clients)==1 and all(p["ready"] for p in self.clients.values()):#測試用
             print("starting game")
             self.start_game()
             self.broadcast({"type":"gamestart"})

@@ -155,7 +155,7 @@ rx,ry=0,0
 def select_skill(event):
     global rx,ry,player
     if event.type==pygame.KEYDOWN:
-        if len(player.players)==2 and event.key==pygame.K_SPACE:#測試用
+        if len(player.players)==1 and event.key==pygame.K_SPACE:#測試用
             player.send({"type":"ready",
                         "data":{
                             "value":not player.me["ready"]
@@ -233,7 +233,8 @@ def load_skill_img():
 gameobjects=[]
 def draw_game_objects():
     gameSurface.fill((119,221,255))
-    gameSurface.blit(player.mapSurf,(-32,-32))
+    if player.mapSurf:
+        gameSurface.blit(player.mapSurf,(-32,-32))
     for obj in player.gameobjects:
         if obj['type']=="player" and obj["img"] is None:
             if obj["pid"]==1:
@@ -253,8 +254,9 @@ def draw_game_objects():
             gameSurface.blit(p_eye,p_eye_rect)
 
 spacedown=False
+mx,my=0,0
 def move_inputs(): 
-    global spacedown
+    global spacedown,mx,my
     keys=pygame.key.get_pressed()
     mx,my=pygame.mouse.get_pos()
     move_x=0

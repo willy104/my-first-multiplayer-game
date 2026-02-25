@@ -35,69 +35,73 @@ class GameServer(threading.Thread):
                 ]
         self.now_map=None
         self.map_data=None
+
+        self.next_projectile_id=0
         print("server created!")
     def run(self):
+        try:
+            print("listening...")
 
-        print("listening...")
+            while self.running:
+                conn,addr=self.sock.accept()
+                if len(self.clients)>=2:
+                    conn.sendall(b"ROOM_FULL")
+                    conn.close()
+                    continue
 
-        while self.running:
-            conn,addr=self.sock.accept()
-            if len(self.clients)>=2:
-                conn.sendall(b"ROOM_FULL")
-                conn.close()
-                continue
-
-            print("client connected",addr)
-            player_id=len(self.clients)+1
-            self.clients[conn]={
-                "id":player_id,
-                "inputs":{},
-                "skills":[1,2,3],
-                "ready":False
-            }
-            self.players[conn]={
-                "x":0,
-                "y":300,
-                "vx":P_SPEED,
-                "vy":0,
-                "ax":0,
-                "ay":0,
-                "pw":32,
-                "ph":32,
-                "dx":0,
-                "dy":0,
-                "jump_cd":0,
-                "double_jump":0,
-                "on_ground":False,
-                "id":player_id,
-                "skills":[1,2,3],
-                "skill_cd":[0,0,0],
-                "skill_count":[0,0,0],
-                "skill_timer":[0,0,0],
-            }
-
-            
-            self.send_packet(conn,{
-                "type":"assign_id",
-                "id":player_id
-            })
-
-            self.send_packet(conn,{"type":"current_players",
-                                   "data":[{"player_id":p["id"],"skills":p["skills"],"ready":p["ready"] }
-                                           for c,p in self.clients.items() if c!=conn]})
-
-            self.broadcast({
-                "type":"player_join",
-                "data":{
-                    "player_id":player_id
+                print("client connected",addr)
+                player_id=len(self.clients)+1
+                self.clients[conn]={
+                    "id":player_id,
+                    "inputs":{},
+                    "skills":[1,2,3],
+                    "ready":False
                 }
-            },sender=conn)
+                self.players[conn]={
+                    "x":0,
+                    "y":300,
+                    "vx":P_SPEED,
+                    "vy":0,
+                    "ax":0,
+                    "ay":0,
+                    "pw":32,
+                    "ph":32,
+                    "dx":0,
+                    "dy":0,
+                    "jump_cd":0,
+                    "double_jump":0,
+                    "on_ground":False,
+                    "id":player_id,
+                    "skills":[1,2,3],
+                    "skill_cd":[0,0,0],
+                    "skill_count":[0,0,0],
+                    "skill_timer":[0,0,0],
+                }
 
-            threading.Thread(
-                target=self.handle_client,
-                args=(conn,),
-                daemon=True
-            ).start()
+                
+                self.send_packet(conn,{
+                    "type":"assign_id",
+                    "id":player_id
+                })
+
+                self.send_packet(conn,{"type":"current_players",
+                                    "data":[{"player_id":p["id"],"skills":p["skills"],"ready":p["ready"] }
+                                            for c,p in self.clients.items() if c!=conn]})
+
+                self.broadcast({
+                    "type":"player_join",
+                    "data":{
+                        "player_id":player_id
+                    }
+                },sender=conn)
+
+                threading.Thread(
+                    target=self.handle_client,
+                    args=(conn,),
+                    daemon=True
+                ).start()
+        except Exception as e:
+            print("server error",e)
 
     def handle_client(self,conn):
         while True:
@@ -408,13 +412,14 @@ class GameServer(threading.Thread):
                     if skill_using["type"]=="projectile":
                         self.spawn_projectile(p,skill_using,wx,wy,p["skills"][i])
 
-
+        self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()
 
     def spawn_projectile(self,p,skill,wx,wy,skill_id):
         
         a=skill.get("a",0)
         proj={
+            "id":self.next_projectile_id,
             "x":p["x"],
             "y":p["y"],
             "vx":skill["speed"]*wx,
@@ -423,8 +428,10 @@ class GameServer(threading.Thread):
             "ay":a*wy,
             "dmg":skill["dmg"],
             "owner":p["id"],
-            "skill_id":skill_id
+            "skill_id":skill_id,
+            "life":True
         }
+        self.next_projectile_id+=1
         self.projectile.append(proj)
 
     def rect_collide(self,r1,r2):
@@ -451,10 +458,12 @@ class GameServer(threading.Thread):
             })
         for proj in self.projectile:
             snapshot_proj.append({
+                "id":proj["id"],
                 "x":proj["x"],
                 "y":proj["y"],
                 "owner":proj["owner"],
-                "skill_id":proj["skill_id"]
+                "skill_id":proj["skill_id"],
+                "life":proj["life"]
             })
         self.broadcast({
             "type":"world_state",

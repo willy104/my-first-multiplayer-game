@@ -24,24 +24,27 @@ class GameClient(threading.Thread):
     def me(self):
         return self.players.get(self.player_id)
     def run(self):
-        while self.running:
-            try:
-                raw_len=self.sock.recv(4)
-                if not raw_len:
+        try:
+            while self.running:
+                try:
+                    raw_len=self.sock.recv(4)
+                    if not raw_len:
+                        break
+                    msg_len=struct.unpack(">I",raw_len)[0]
+                    data=self.receive_fixed(msg_len)
+
+                    if data:
+                        msg=json.loads(data.decode())
+                        
+
+                    print(f"server msg: {msg}")
+                    self.handle_msg(msg)
+
+                except:
                     break
-                msg_len=struct.unpack(">I",raw_len)[0]
-                data=self.receive_fixed(msg_len)
-
-                if data:
-                    msg=json.loads(data.decode())
-                    
-
-                print(f"server msg: {msg}")
-                self.handle_msg(msg)
-
-            except:
-                break
-        print("disconnect")
+            print("disconnect")
+        except Exception as e:
+            print("client error",e)
     def receive_fixed(self,length):
         data=b""
         while len(data)<length:
@@ -157,16 +160,33 @@ class GameClient(threading.Thread):
                     "dy":pdata["dy"],
                     "img":None
                 })
-        self.gameobjects=[o for o in self.gameobjects if o.get("type") != "projectile"]
+        proj_ids=set()
         for proj_data in data["proj"]:
-            self.gameobjects.append({
-                "type":"projectile",
-                "x":proj_data["x"],
-                "y":proj_data["y"],
-                "owner":proj_data["owner"],
-                "skill_id":proj_data["skill_id"],
-                "img":None
-            })
+            proj_id=proj_data["id"]
+            proj_ids.add(proj_id)
+
+            obj=next((o for o in self.gameobjects 
+                      if o.get("type")=="projectile" and o.get("id")==proj_id),None)
+
+            if obj:
+                obj["x"]=proj_data["x"]
+                obj["y"]=proj_data["y"]
+                obj["life"]=proj_data["life"]
+            else:
+                self.gameobjects.append({
+                    "type":"projectile",
+                    "id":proj_data["id"],
+                    "x":proj_data["x"],
+                    "y":proj_data["y"],
+                    "owner":proj_data["owner"],
+                    "skill_id":proj_data["skill_id"],
+                    "img":None,
+                    "life":proj_data["life"]
+                })
+        self.gameobjects=[o for o in self.gameobjects 
+                          if o.get("type") != "projectile" 
+                          or o.get("id") in proj_ids
+                        ]
     def on_game_start(self):
         self.can_move=True
 

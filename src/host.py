@@ -294,13 +294,59 @@ class GameServer(threading.Thread):
             else:
                 time.sleep(0.001)
 
+    def proj_x_collide(self,proj):
+        cx=proj["x"]
+        cy=proj["y"]
+        r=proj["r"]
+        for rect in self.solid_rects:
+            closest_x=max(rect["x"],min(cx,rect["x"]+rect["w"]))
+            closest_y=max(rect["y"],min(cy,rect["y"]+rect["h"]))
+
+            dx=cx-closest_x
+            dy=cy-closest_y
+            
+            if proj["life"]:
+                if dx*dx+dy*dy<r*r:
+                    if proj["vx"]>0:
+                        proj["x"]=rect["x"]-r
+                    else:
+                        proj["x"]=rect["x"]+rect["w"]
+                    proj["life"]-=1
+                    proj["vx"]*=-1
+                    break
+    def proj_y_collide(self,proj):
+        cx=proj["x"]
+        cy=proj["y"]
+        r=proj["r"]
+        for rect in self.solid_rects:
+            closest_x=max(rect["x"],min(cx,rect["x"]+rect["w"]))
+            closest_y=max(rect["y"],min(cy,rect["y"]+rect["h"]))
+
+            dx=cx-closest_x
+            dy=cy-closest_y
+            
+            if proj["life"]:
+                if dx*dx+dy*dy<r*r:
+                    if proj["vy"]>0:
+                        proj["y"]=rect["y"]-r
+                    else:
+                        proj["y"]=rect["y"]+rect["h"]+r
+                    proj["life"]-=1
+                    proj["vy"]*=-1
+                    break
     def world_update(self,dt):
         for proj in self.projectile:
+            if not proj["life"]:
+                continue
             proj["vx"]+=proj["ax"]*dt
             proj["vy"]+=proj["ay"]*dt
 
             proj["x"]+=proj["vx"]*dt
+            self.proj_x_collide(proj)
+
             proj["y"]+=proj["vy"]*dt
+            self.proj_y_collide(proj)
+            
 
         for conn,p in self.players.items():
             inp=self.clients[conn].get("inputs",{})
@@ -429,7 +475,7 @@ class GameServer(threading.Thread):
             "dmg":skill["dmg"],
             "owner":p["id"],
             "skill_id":skill_id,
-            "life":True,
+            "life":skill.get("bounces",1),
             "r":skill.get("hitbox_rad",None)
         }
         self.next_projectile_id+=1

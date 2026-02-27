@@ -25,8 +25,12 @@ def creat_map(map_data,map_json_path=None):
             base_dir=os.path.dirname(os.path.abspath(map_json_path))
             img_path=os.path.join(base_dir,img_path)
             img_path=os.path.normpath(img_path)
-        image=pygame.image.load(img_path.replace("\\","/")).convert_alpha()
+        try:
 
+            image=pygame.image.load(img_path).convert_alpha()
+        except Exception as e:
+            print(f"failed",e)
+            continue
         tilesets[ts["firstgid"]]={
             "image":image,
             "columns":ts["columns"],

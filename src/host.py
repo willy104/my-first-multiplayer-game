@@ -190,7 +190,7 @@ class GameServer(threading.Thread):
                         }
                     })
         
-        if len(self.clients)==1 and all(p["ready"] for p in self.clients.values()):#測試用
+        if len(self.clients)>=1 and all(p["ready"] for p in self.clients.values()):#測試用
             print("starting game")
             self.start_game()
             self.broadcast({"type":"gamestart"})
@@ -420,8 +420,8 @@ class GameServer(threading.Thread):
         a=skill.get("a",0)
         proj={
             "id":self.next_projectile_id,
-            "x":p["x"],
-            "y":p["y"],
+            "x":p["x"]+p["pw"]/2,
+            "y":p["y"]+p["ph"]/2,
             "vx":skill["speed"]*wx,
             "vy":skill["speed"]*wy,
             "ax":a*wx,
@@ -429,7 +429,8 @@ class GameServer(threading.Thread):
             "dmg":skill["dmg"],
             "owner":p["id"],
             "skill_id":skill_id,
-            "life":True
+            "life":True,
+            "r":skill.get("hitbox_rad",None)
         }
         self.next_projectile_id+=1
         self.projectile.append(proj)
@@ -463,7 +464,8 @@ class GameServer(threading.Thread):
                 "y":proj["y"],
                 "owner":proj["owner"],
                 "skill_id":proj["skill_id"],
-                "life":proj["life"]
+                "life":proj["life"],
+                "r":proj["r"]
             })
         self.broadcast({
             "type":"world_state",

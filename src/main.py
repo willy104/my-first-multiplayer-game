@@ -157,7 +157,7 @@ rx,ry=0,0
 def select_skill(event):
     global rx,ry,player
     if event.type==pygame.KEYDOWN:
-        if len(player.players)==1 and event.key==pygame.K_SPACE:#測試用
+        if len(player.players)>=1 and event.key==pygame.K_SPACE:#測試用
             player.send({"type":"ready",
                         "data":{
                             "value":not player.me["ready"]
@@ -249,10 +249,15 @@ def draw_game_objects():
             else:
                 obj["img"]=player2img
             
-        if obj['type']=="projectile" and obj["img"] is None:
-            obj["img"]=skill_img.get(obj["skill_id"])
-
-        gameSurface.blit(obj["img"],(obj["x"],obj["y"]))
+        if obj["type"]=="projectile" and obj["hitbox"]=="circle":
+            r=obj.get("r",5)
+            pcolor=(100,100,255) if obj["owner"]==player.player_id else (255,50,50)
+            pygame.draw.circle(gameSurface,pcolor,(int(obj["x"]),int(obj["y"])),r)
+        '''if obj['type']=="projectile" and obj["img"] is None:
+            obj["img"]=skill_img.get(obj["skill_id"])'''
+        
+        if obj["img"] is not None:
+            gameSurface.blit(obj["img"],(obj["x"],obj["y"]))
 
         if obj['type']=="player":
             obj["dx"]=min(4,max(obj["dx"],-4))

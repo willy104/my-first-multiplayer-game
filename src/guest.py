@@ -4,7 +4,7 @@ import json
 import struct
 import os
 from map_creat import creat_map
-from constnums import P_SPEED,GRAVITY
+from constnums import P_SPEED,GRAVITY,SKILLS
 
 class GameClient(threading.Thread):
     def __init__(self,ip,port=5555):
@@ -40,8 +40,8 @@ class GameClient(threading.Thread):
                     print(f"server msg: {msg}")
                     self.handle_msg(msg)
 
-                except:
-                    break
+                except Exception as e:
+                    print("client error",e)
             print("disconnect")
         except Exception as e:
             print("client error",e)
@@ -178,10 +178,12 @@ class GameClient(threading.Thread):
                     "id":proj_data["id"],
                     "x":proj_data["x"],
                     "y":proj_data["y"],
+                    "r":proj_data["r"],
                     "owner":proj_data["owner"],
                     "skill_id":proj_data["skill_id"],
                     "img":None,
-                    "life":proj_data["life"]
+                    "life":proj_data["life"],
+                    "hitbox":SKILLS[proj_data["skill_id"]-1].get("hitbox")
                 })
         self.gameobjects=[o for o in self.gameobjects 
                           if o.get("type") != "projectile" 

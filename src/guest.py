@@ -19,6 +19,7 @@ class GameClient(threading.Thread):
         self.game_started=False
         self.players={}
         self.map_data=None
+        self.mapSurf=None
         print("connected to server")
     @property
     def me(self):

@@ -203,7 +203,7 @@ def handle_confirm():
     if ty:
         #ip=input_box[0].text
         ip="25.22.201.174"
-        ip="25.4.29.65"
+        #ip="25.4.29.65"
         player=GameClient(ip)
         if player:
             screen_state="ready"

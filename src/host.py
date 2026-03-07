@@ -310,7 +310,7 @@ class GameServer(threading.Thread):
                     if proj["vx"]>0:
                         proj["x"]=rect["x"]-r
                     else:
-                        proj["x"]=rect["x"]+rect["w"]
+                        proj["x"]=rect["x"]+rect["w"]+r
                     proj["life"]-=1
                     proj["vx"]*=-1
                     break

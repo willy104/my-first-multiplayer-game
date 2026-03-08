@@ -68,6 +68,7 @@ class GameServer(threading.Thread):
                     "ph":32,
                     "dx":0,
                     "dy":0,
+                    "hp":500,
                     "jump_cd":0,
                     "double_jump":0,
                     "on_ground":False,
@@ -76,6 +77,7 @@ class GameServer(threading.Thread):
                     "skill_cd":[0,0,0],
                     "skill_count":[0,0,0],
                     "skill_timer":[0,0,0],
+                    "alive":True
                 }
 
                 
@@ -334,6 +336,21 @@ class GameServer(threading.Thread):
                     proj["life"]-=1
                     proj["vy"]*=-1
                     break
+    def circle_rect_collide(self,circle,rect):
+        cx=circle["x"]
+        cy=circle["y"]
+        r=circle["r"]
+
+        closest_x=max(rect["px"],min(cx,rect["px"]+rect["pw"]))
+        closest_y=max(rect["py"],min(cy,rect["py"]+rect["ph"]))
+
+        dx=cx-closest_x
+        dy=cy-closest_y
+        if circle["life"]:
+            if dx*dx+dy*dy<r*r:
+                return True
+        
+        return False
     def world_update(self,dt):
         for proj in self.projectile:
             if not proj["life"]:
@@ -346,7 +363,11 @@ class GameServer(threading.Thread):
 
             proj["y"]+=proj["vy"]*dt
             self.proj_y_collide(proj)
-            
+            for conn,player in self.players.items():
+                if player["id"]!=proj["owner"] and player['alive']:
+                    if self.circle_rect_collide(proj,player):
+                        proj["life"]=0
+                        player["hp"]-=proj["dmg"]
 
         for conn,p in self.players.items():
             inp=self.clients[conn].get("inputs",{})
@@ -501,7 +522,8 @@ class GameServer(threading.Thread):
                 "y":p["y"],
                 "dx":p["dx"],
                 "dy":p["dy"],
-                "skill_cd":p["skill_cd"]
+                "skill_cd":p["skill_cd"],
+                "hp":p["hp"]
             })
         for proj in self.projectile:
             snapshot_proj.append({

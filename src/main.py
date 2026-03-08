@@ -38,6 +38,7 @@ p1_text=pygame.image.load("assets/images/texts/p1.png").convert_alpha()
 p2_text=pygame.image.load("assets/images/texts/p2.png").convert_alpha()
 you_hint=pygame.image.load("assets/images/texts/youhint.png").convert_alpha()
 pready=pygame.image.load("assets/images/texts/pready.png").convert_alpha()
+healthbarimg=pygame.image.load("assets/images/texts/healthbar.png").convert_alpha()
 
 p_yellow=pygame.image.load("assets/images/players/player_yellow.png").convert_alpha()
 p_green=pygame.image.load("assets/images/players/player_green.png").convert_alpha()
@@ -51,6 +52,10 @@ lanceicon=pygame.image.load("assets/images/icons/lanceicon.png").convert_alpha()
 player1img=pygame.image.load("assets/images/gameobjects/player1img.png").convert()
 player2img=pygame.image.load("assets/images/gameobjects/player2img.png").convert()
 p_eye=pygame.image.load("assets/images/gameobjects/ceyes.png").convert_alpha()
+
+font=pygame.font.Font("assets/fonts/PixelOperator8.ttf",23)
+
+
 
 open_chart=False
 screen_state="main menu"
@@ -265,6 +270,12 @@ def draw_game_objects():
             obj["dy"]=min(5,max(obj["dy"],-7))
             p_eye_rect=p_eye.get_rect(center=(obj["x"]+16+obj["dx"],obj["y"]+16+obj["dy"]))
             gameSurface.blit(p_eye,p_eye_rect)
+    gameSurface.blit(healthbarimg,(0,0))
+    for i in range(1,3):
+        if i==1:
+            hp=player.players[i].get("hp")
+            hptxt=font.render(f"{hp}",False,(0,0,0))
+            gameSurface.blit(hptxt,(13+(i-1)*870,40))
 
 spacedown=False
 mx,my=0,0

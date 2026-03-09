@@ -2,7 +2,7 @@ import pygame
 from input_box import InputBox
 from host import GameServer
 from guest import GameClient
-
+from constnums import SKILLS
 
 pygame.init()
 pygame.mouse.set_visible(False)
@@ -235,8 +235,9 @@ def load_skill_img():
             used_skills.add(skill_id)
 
     for skill_id in used_skills:
-        path=f"assets/images/gameobjects/skill{skill_id}img.png"
-        skill_img[skill_id]=pygame.image.load(path).convert_alpha()
+        if SKILLS[skill_id-1]["img"]:
+            path=f"assets/images/gameobjects/skill{skill_id}img.png"
+            skill_img[skill_id]=pygame.image.load(path).convert_alpha()
 
 def draw_target_logo():
     global mx,my
@@ -271,7 +272,7 @@ def draw_game_objects():
             p_eye_rect=p_eye.get_rect(center=(obj["x"]+16+obj["dx"],obj["y"]+16+obj["dy"]))
             gameSurface.blit(p_eye,p_eye_rect)
     gameSurface.blit(healthbarimg,(0,0))
-    if len(player.players)>=1:
+    if len(player.players)>=2:
         for i in range(1,3):
             hp=player.players[i].get("hp")
             hptxt=font.render(f"{hp}",False,(0,0,0))

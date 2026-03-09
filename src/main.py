@@ -271,8 +271,8 @@ def draw_game_objects():
             p_eye_rect=p_eye.get_rect(center=(obj["x"]+16+obj["dx"],obj["y"]+16+obj["dy"]))
             gameSurface.blit(p_eye,p_eye_rect)
     gameSurface.blit(healthbarimg,(0,0))
-    for i in range(1,3):
-        if i==1:
+    if len(player.players)>=1:
+        for i in range(1,3):
             hp=player.players[i].get("hp")
             hptxt=font.render(f"{hp}",False,(0,0,0))
             gameSurface.blit(hptxt,(13+(i-1)*870,40))

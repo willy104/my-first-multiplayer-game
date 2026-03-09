@@ -336,19 +336,18 @@ class GameServer(threading.Thread):
                     proj["life"]-=1
                     proj["vy"]*=-1
                     break
-    def circle_rect_collide(self,circle,rect):
+    def circle_player_collide(self,circle,P):
         cx=circle["x"]
         cy=circle["y"]
         r=circle["r"]
 
-        closest_x=max(rect["px"],min(cx,rect["px"]+rect["pw"]))
-        closest_y=max(rect["py"],min(cy,rect["py"]+rect["ph"]))
+        closest_x=max(P["x"],min(cx,P["x"]+P["pw"]))
+        closest_y=max(P["y"],min(cy,P["y"]+P["ph"]))
 
         dx=cx-closest_x
         dy=cy-closest_y
-        if circle["life"]:
-            if dx*dx+dy*dy<r*r:
-                return True
+        if dx*dx+dy*dy<r*r:
+            return True
         
         return False
     def world_update(self,dt):
@@ -365,7 +364,7 @@ class GameServer(threading.Thread):
             self.proj_y_collide(proj)
             for conn,player in self.players.items():
                 if player["id"]!=proj["owner"] and player['alive']:
-                    if self.circle_rect_collide(proj,player):
+                    if self.circle_player_collide(proj,player):
                         proj["life"]=0
                         player["hp"]-=proj["dmg"]
 

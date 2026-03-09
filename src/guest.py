@@ -142,6 +142,7 @@ class GameClient(threading.Thread):
             self.players[pid]["x"]=pdata["x"]
             self.players[pid]["y"]=pdata["y"]
             self.players[pid]["skill_cd"]=pdata["skill_cd"]
+            self.players[pid]["hp"]=pdata["hp"]
             
 
 

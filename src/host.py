@@ -518,12 +518,14 @@ class GameServer(threading.Thread):
         if skill_name=="dash":
             if sk_count>0:
                 p["state"]="movement"
+                p["invincible"]=True
                 p["dashvx"]=wx*skill["speed"]
                 p["dashvy"]=wy*skill["speed"]
             else:
                 p["vx"]=p["dashvx"]*0.2
                 p["vy"]=p["dashvy"]*0.2   
-                p["state"]="normal"     
+                p["state"]="normal" 
+                p["invincible"]=False    
             
 
 

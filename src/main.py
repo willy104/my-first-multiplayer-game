@@ -282,9 +282,16 @@ def draw_game_objects():
             hptxt=font.render(f"{hp}",False,(0,0,0))
             gameSurface.blit(hptxt,(13+(i-1)*870,40))
             gameSurface.blit(player.players[i]["skillbar"],((i-1)*776,578))
+            skill_cd=player.players[i]["skill_cd"]
+            for j in range(3):
+                ratio=skill_cd[j]/SKILLS[player.players[i]["skills"][j]-1]["cd"]
+                h=int(56*ratio)
+                if skill_cd[j]!=0:
+                    mask_rect=pygame.Surface((56,h),pygame.SRCALPHA)
+                    mask_rect.fill((0,0,0,150))
+                    gameSurface.blit(mask_rect,(5+j*60+(i-1)*776,639-h))
+                    
             
-
-
 
 def skillbar_creat():
     if len(player.players)>=2:
@@ -293,8 +300,6 @@ def skillbar_creat():
             player.players[i]["skillbar"].blit(skill_bar,(0,0))
             for j in range(3):
                     player.players[i]["skillbar"].blit(icons[player.players[i]["skills"][j]-1],(4+60*j,0))
-        
-                
         
 
 spacedown=False

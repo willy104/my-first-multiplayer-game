@@ -158,6 +158,7 @@ def ready_menu():
     if player.game_started:
         screen_state="in game"
         load_skill_img()
+        skillbar_creat()
 
 rx,ry=0,0
 
@@ -246,6 +247,7 @@ def draw_target_logo():
     tar_rect=targetlogo.get_rect(center=(mx,my))
     gameSurface.blit(targetlogo,tar_rect)
 
+
 gameobjects=[]
 def draw_game_objects():
     gameSurface.fill((119,221,255))
@@ -279,6 +281,21 @@ def draw_game_objects():
             hp=player.players[i].get("hp")
             hptxt=font.render(f"{hp}",False,(0,0,0))
             gameSurface.blit(hptxt,(13+(i-1)*870,40))
+            gameSurface.blit(player.players[i]["skillbar"],((i-1)*776,578))
+            
+
+
+
+def skillbar_creat():
+    if len(player.players)>=2:
+        for i in range(1,3):
+            player.players[i]["skillbar"]=pygame.Surface((184,64))
+            player.players[i]["skillbar"].blit(skill_bar,(0,0))
+            for j in range(3):
+                    player.players[i]["skillbar"].blit(icons[player.players[i]["skills"][j]-1],(4+60*j,0))
+        
+                
+        
 
 spacedown=False
 mx,my=0,0

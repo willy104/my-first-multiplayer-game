@@ -88,7 +88,8 @@ class GameClient(threading.Thread):
                     "skill_cd":[0,0,0],
                     "hp":500,
                     "ready":pdata["ready"],
-                    "connected":True
+                    "connected":True,
+                    "skillbar":None
                 }
         elif msg_type=="player_update":
             data=msg["data"]
@@ -132,7 +133,9 @@ class GameClient(threading.Thread):
                 "skills":[1,2,3],
                 "skill_cd":[0,0,0],
                 "hp":500,
-                "ready":False    
+                "ready":False,
+                "connected":True,
+                "skillbar":None    
             }
     def handle_world_state(self,data):
         for pdata in data["players"]:

@@ -77,7 +77,12 @@ class GameServer(threading.Thread):
                     "skill_cd":[0,0,0],
                     "skill_count":[0,0,0],
                     "skill_timer":[0,0,0],
-                    "alive":True
+                    "alive":True,
+                    "can_move":True,
+                    "invincible":False,
+                    "state":"normal",
+                    "dashvx":0,
+                    "dashvy":0,
                 }
 
                 
@@ -366,22 +371,29 @@ class GameServer(threading.Thread):
                 if player["id"]!=proj["owner"] and player['alive']:
                     if self.circle_player_collide(proj,player):
                         proj["life"]=0
-                        player["hp"]-=proj["dmg"]
+                        if not player["invincible"]:
+                            player["hp"]-=proj["dmg"]
 
         for conn,p in self.players.items():
-            inp=self.clients[conn].get("inputs",{})
-            self.clients[conn]["inputs"]={}
+            if p["can_move"]:
+                inp=self.clients[conn].get("inputs",{})
+                self.clients[conn]["inputs"]={}
 
-            
-            mx=inp.get("mx",0)
-            my=inp.get("my",0)
-            
-            dir_x=inp.get("dir_x",0)
-            jump=inp.get("jump",False)
-            skill_key=inp.get("skill_key",None)
-            #x軸移動
-            p["vx"]+=p["ax"]*dt
-            new_x=p["x"]+dir_x*p['vx']*dt
+                
+                mx=inp.get("mx",0)
+                my=inp.get("my",0)
+                
+                dir_x=inp.get("dir_x",0)
+                jump=inp.get("jump",False)
+                skill_key=inp.get("skill_key",None)
+                #x軸移動
+                if p["state"]=="normal":
+                    if dir_x!=0:
+                        p["vx"]=P_SPEED
+                    p["vx"]+=p["ax"]*dt
+                    new_x=p["x"]+dir_x*p['vx']*dt
+                elif p["state"]=="movement":
+                    new_x=p["x"]+p["dashvx"]*dt
             
             player_rect={
                 "x":new_x,
@@ -392,10 +404,16 @@ class GameServer(threading.Thread):
             
             for rect in self.solid_rects:
                 if self.rect_collide(player_rect,rect):
-                    if dir_x>0:
-                        new_x=rect["x"]-p["pw"]
-                    elif dir_x<0:
-                        new_x=rect["x"]+rect["w"]
+                    if p["state"]=="movement":
+                        if p["dashvx"]>0:
+                            new_x=rect["x"]-p["pw"]
+                        elif dir_x<0:
+                            new_x=rect["x"]+rect["w"]
+                    else:
+                        if dir_x>0:
+                            new_x=rect["x"]-p["pw"]
+                        elif dir_x<0:
+                            new_x=rect["x"]+rect["w"]
                     break
             p["x"]=new_x
             #y軸移動
@@ -414,21 +432,31 @@ class GameServer(threading.Thread):
                     p["vy"]=JUMP_SPEED
                     p["double_jump"]+=1
                     p["jump_cd"]=JUMP_CD
-
-            p["vy"]+=GRAVITY*dt
-            new_y=p["y"]+p['vy']*dt
+            if p["state"]=="normal":
+                p["vy"]+=GRAVITY*dt
+                new_y=p["y"]+p['vy']*dt
+            elif p["state"]=="movement":
+                new_y=p["y"]+p["dashvy"]*dt
 
             player_rect["x"]=new_x
             player_rect["y"]=new_y
 
             for rect in self.solid_rects:
                 if self.rect_collide(player_rect,rect):
-                    if p["vy"]>0:
-                        p["on_ground"]=True
-                        p["double_jump"]=0
-                        new_y=rect["y"]-p["ph"]
-                    elif p["vy"]<0:
-                        new_y=rect["y"]+rect["h"]
+                    if p["state"]=="movement":
+                        if p["dashvy"]>0:
+                            p["on_ground"]=True
+                            p["double_jump"]=0
+                            new_y=rect["y"]-p["ph"]
+                        elif p["dashvy"]<0:
+                            new_y=rect["y"]+rect["h"]
+                    else:
+                        if p["vy"]>0:
+                            p["on_ground"]=True
+                            p["double_jump"]=0
+                            new_y=rect["y"]-p["ph"]
+                        elif p["vy"]<0:
+                            new_y=rect["y"]+rect["h"]
                     p["vy"]=0
                     break
             
@@ -469,6 +497,8 @@ class GameServer(threading.Thread):
                     p["skill_cd"][slot]=skill_using["cd"]
                     if skill_using["type"]=="projectile":
                         p["skill_count"][slot]=skill_using["amount"]
+                    if skill_using["type"]=="movement":
+                        p["skill_count"][slot]=skill_using.get("amount",1)
 
             for i in range(3):
                 if p["skill_count"][i] and p["skill_timer"][i]==0:
@@ -477,9 +507,27 @@ class GameServer(threading.Thread):
                     p["skill_timer"][i]=skill_using["atkspeed"]
                     if skill_using["type"]=="projectile":
                         self.spawn_projectile(p,skill_using,wx,wy,p["skills"][i])
+                    if skill_using["type"]=="movement":
+                        self.use_movement_skill(skill_using,wx,wy,p["skill_count"][i],p)
 
         self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()
+
+    def use_movement_skill(self,skill,wx,wy,sk_count,p):
+        skill_name=skill["name"]
+        if skill_name=="dash":
+            if sk_count>0:
+                p["state"]="movement"
+                p["dashvx"]=wx*skill["speed"]
+                p["dashvy"]=wy*skill["speed"]
+            else:
+                p["vx"]=p["dashvx"]*0.2
+                p["vy"]=p["dashvy"]*0.2   
+                p["state"]="normal"     
+            
+
+
+
 
     def spawn_projectile(self,p,skill,wx,wy,skill_id):
         

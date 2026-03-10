@@ -44,6 +44,8 @@ p_yellow=pygame.image.load("assets/images/players/player_yellow.png").convert_al
 p_green=pygame.image.load("assets/images/players/player_green.png").convert_alpha()
 rp_green=pygame.transform.flip(p_green,True,False)
 
+
+skill_bar=pygame.image.load("assets/images/icons/skillbar.png").convert()
 fireballicon=pygame.image.load("assets/images/icons/fireballicon.png").convert_alpha()
 bounceballicon=pygame.image.load("assets/images/icons/bounceballicon.png").convert_alpha()
 dashicon=pygame.image.load("assets/images/icons/dashicon.png").convert_alpha()

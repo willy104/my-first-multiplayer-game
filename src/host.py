@@ -357,48 +357,49 @@ class GameServer(threading.Thread):
         return False
     def world_update(self,dt):
         for conn,p in self.players.items():
-            if p["alive"]:
-                if p["can_move"]:
-                    inp=self.clients[conn].get("inputs",{})
-                    self.clients[conn]["inputs"]={}
-
-                    
-                    mx=inp.get("mx",None)
-                    my=inp.get("my",None)
-                    
-                    dir_x=inp.get("dir_x",0)
-                    jump=inp.get("jump",False)
-                    skill_key=inp.get("skill_key",None)
-                    #x軸移動
-                    if p["state"]=="normal":
-                        if dir_x!=0:
-                            p["vx"]=P_SPEED
-                        p["vx"]+=p["ax"]*dt
-                        new_x=p["x"]+dir_x*p['vx']*dt
-                    elif p["state"]=="movement":
-                        new_x=p["x"]+p["dashvx"]*dt
+            if p["can_move"]:
+                inp=self.clients[conn].get("inputs",{})
+                self.clients[conn]["inputs"]={}
+                mx=inp.get("mx",None)
+                my=inp.get("my",None)
                 
-                player_rect={
-                    "x":new_x,
-                    "y":p["y"],
-                    "w":p["pw"],
-                    "h":p["ph"]
-                }
+                dir_x=inp.get("dir_x",0)
+                jump=inp.get("jump",False)
+                skill_key=inp.get("skill_key",None)
+                if not p["alive"]:
+                    jump=False
+                    dir_x=0
+                    skill_key=None
+                #x軸移動
+                if p["state"]=="normal":
+                    if dir_x!=0:
+                        p["vx"]=P_SPEED
+                    p["vx"]+=p["ax"]*dt
+                    new_x=p["x"]+dir_x*p['vx']*dt
+                elif p["state"]=="movement":
+                    new_x=p["x"]+p["dashvx"]*dt
                 
-                for rect in self.solid_rects:
-                    if self.rect_collide(player_rect,rect):
-                        if p["state"]=="movement":
-                            if p["dashvx"]>0:
-                                new_x=rect["x"]-p["pw"]
-                            elif dir_x<0:
-                                new_x=rect["x"]+rect["w"]
-                        else:
-                            if dir_x>0:
-                                new_x=rect["x"]-p["pw"]
-                            elif dir_x<0:
-                                new_x=rect["x"]+rect["w"]
-                        break
-                p["x"]=new_x
+            player_rect={
+                "x":new_x,
+                "y":p["y"],
+                "w":p["pw"],
+                "h":p["ph"]
+            }
+                
+            for rect in self.solid_rects:
+                if self.rect_collide(player_rect,rect):
+                    if p["state"]=="movement":
+                        if p["dashvx"]>0:
+                            new_x=rect["x"]-p["pw"]
+                        elif dir_x<0:
+                            new_x=rect["x"]+rect["w"]
+                    else:
+                        if dir_x>0:
+                            new_x=rect["x"]-p["pw"]
+                        elif dir_x<0:
+                            new_x=rect["x"]+rect["w"]
+                    break
+            p["x"]=new_x
             #y軸移動
 
             if p["jump_cd"]>0:
@@ -513,11 +514,14 @@ class GameServer(threading.Thread):
             proj["y"]+=proj["vy"]*dt
             self.proj_y_collide(proj)
             for conn,player in self.players.items():
-                if player["id"]!=proj["owner"] and player['alive']:
+                if player["id"]!=proj["owner"]:
                     if self.circle_player_collide(proj,player):
                         proj["life"]=0
-                        if not player["invincible"]:
+                        if not player["invincible"] and player["alive"]:
                             player["hp"]-=proj["dmg"]    
+                            if player["hp"]<=0:
+                                player["alive"]=False
+                                player["hp"]=0
 
         self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()

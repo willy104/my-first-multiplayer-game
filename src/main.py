@@ -53,6 +53,9 @@ lanceicon=pygame.image.load("assets/images/icons/lanceicon.png").convert_alpha()
 
 player1img=pygame.image.load("assets/images/gameobjects/player1img.png").convert()
 player2img=pygame.image.load("assets/images/gameobjects/player2img.png").convert()
+p1dead=pygame.image.load("assets/images/players/p1dead.png").convert()
+p2dead=pygame.image.load("assets/images/players/p2dead.png").convert()
+
 p_eye=pygame.image.load("assets/images/gameobjects/ceyes.png").convert_alpha()
 
 font=pygame.font.Font("assets/fonts/PixelOperator8.ttf",23)
@@ -254,11 +257,17 @@ def draw_game_objects():
     if player.mapSurf:
         gameSurface.blit(player.mapSurf,(-32,-32))
     for obj in player.gameobjects:
-        if obj['type']=="player" and obj["img"] is None:
+        if obj['type']=="player" and (obj["img"] is None or obj["img"]=="dead"):
             if obj["pid"]==1:
-                obj["img"]=player1img
+                if obj["img"]=="dead":
+                    obj["img"]=p1dead
+                else:
+                    obj["img"]=player1img
             else:
-                obj["img"]=player2img
+                if obj["img"]=="dead":
+                    obj["img"]=p2dead
+                else:
+                    obj["img"]=player2img
             
         if obj["type"]=="projectile" and obj["hitbox"]=="circle":
             r=obj.get("r",5)
@@ -274,7 +283,8 @@ def draw_game_objects():
             obj["dx"]=min(4,max(obj["dx"],-4))
             obj["dy"]=min(5,max(obj["dy"],-7))
             p_eye_rect=p_eye.get_rect(center=(obj["x"]+16+obj["dx"],obj["y"]+16+obj["dy"]))
-            gameSurface.blit(p_eye,p_eye_rect)
+            if obj["alive"]:
+                gameSurface.blit(p_eye,p_eye_rect)
     gameSurface.blit(healthbarimg,(0,0))
     if len(player.players)>=2:
         for i in range(1,3):

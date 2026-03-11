@@ -89,7 +89,8 @@ class GameClient(threading.Thread):
                     "hp":500,
                     "ready":pdata["ready"],
                     "connected":True,
-                    "skillbar":None
+                    "skillbar":None,
+                    "alive":True,
                 }
         elif msg_type=="player_update":
             data=msg["data"]
@@ -135,7 +136,8 @@ class GameClient(threading.Thread):
                 "hp":500,
                 "ready":False,
                 "connected":True,
-                "skillbar":None    
+                "skillbar":None,
+                "alive":True,    
             }
     def handle_world_state(self,data):
         for pdata in data["players"]:
@@ -146,6 +148,9 @@ class GameClient(threading.Thread):
             self.players[pid]["y"]=pdata["y"]
             self.players[pid]["skill_cd"]=pdata["skill_cd"]
             self.players[pid]["hp"]=pdata["hp"]
+            if pdata["hp"]==0:
+                self.players[pid]["alive"]=False
+
             
 
 
@@ -155,6 +160,9 @@ class GameClient(threading.Thread):
                 obj["y"]=pdata["y"]
                 obj["dx"]=pdata["dx"]
                 obj["dy"]=pdata["dy"]
+                if self.players[pid]["alive"]==False:
+                    obj["img"]="dead"
+                    obj["alive"]=False
             else:
                 self.gameobjects.append({
                     "type":"player",                                        
@@ -163,7 +171,8 @@ class GameClient(threading.Thread):
                     "y":pdata["y"],
                     "dx":pdata["dx"],
                     "dy":pdata["dy"],
-                    "img":None
+                    "img":None,
+                    "alive":True
                 })
         proj_ids=set()
         for proj_data in data["proj"]:

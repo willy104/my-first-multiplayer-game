@@ -280,7 +280,13 @@ def draw_game_objects():
         for i in range(1,3):
             hp=player.players[i].get("hp")
             hptxt=font.render(f"{hp}",False,(0,0,0))
-            gameSurface.blit(hptxt,(13+(i-1)*870,40))
+            hpw=hptxt.get_width()
+            if i==1:
+                hpx=int(13+hpw/2)
+            else:
+                hpx=int(947-hpw/2)
+            hp_rect=hptxt.get_rect(center=(hpx,50))
+            gameSurface.blit(hptxt,hp_rect)
             gameSurface.blit(player.players[i]["skillbar"],((i-1)*776,578))
             skill_cd=player.players[i]["skill_cd"]
             for j in range(3):

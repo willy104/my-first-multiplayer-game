@@ -356,66 +356,49 @@ class GameServer(threading.Thread):
         
         return False
     def world_update(self,dt):
-        for proj in self.projectile:
-            if not proj["life"]:
-                continue
-            proj["vx"]+=proj["ax"]*dt
-            proj["vy"]+=proj["ay"]*dt
-
-            proj["x"]+=proj["vx"]*dt
-            self.proj_x_collide(proj)
-
-            proj["y"]+=proj["vy"]*dt
-            self.proj_y_collide(proj)
-            for conn,player in self.players.items():
-                if player["id"]!=proj["owner"] and player['alive']:
-                    if self.circle_player_collide(proj,player):
-                        proj["life"]=0
-                        if not player["invincible"]:
-                            player["hp"]-=proj["dmg"]
-
         for conn,p in self.players.items():
-            if p["can_move"]:
-                inp=self.clients[conn].get("inputs",{})
-                self.clients[conn]["inputs"]={}
+            if p["alive"]:
+                if p["can_move"]:
+                    inp=self.clients[conn].get("inputs",{})
+                    self.clients[conn]["inputs"]={}
 
+                    
+                    mx=inp.get("mx",None)
+                    my=inp.get("my",None)
+                    
+                    dir_x=inp.get("dir_x",0)
+                    jump=inp.get("jump",False)
+                    skill_key=inp.get("skill_key",None)
+                    #x軸移動
+                    if p["state"]=="normal":
+                        if dir_x!=0:
+                            p["vx"]=P_SPEED
+                        p["vx"]+=p["ax"]*dt
+                        new_x=p["x"]+dir_x*p['vx']*dt
+                    elif p["state"]=="movement":
+                        new_x=p["x"]+p["dashvx"]*dt
                 
-                mx=inp.get("mx",0)
-                my=inp.get("my",0)
+                player_rect={
+                    "x":new_x,
+                    "y":p["y"],
+                    "w":p["pw"],
+                    "h":p["ph"]
+                }
                 
-                dir_x=inp.get("dir_x",0)
-                jump=inp.get("jump",False)
-                skill_key=inp.get("skill_key",None)
-                #x軸移動
-                if p["state"]=="normal":
-                    if dir_x!=0:
-                        p["vx"]=P_SPEED
-                    p["vx"]+=p["ax"]*dt
-                    new_x=p["x"]+dir_x*p['vx']*dt
-                elif p["state"]=="movement":
-                    new_x=p["x"]+p["dashvx"]*dt
-            
-            player_rect={
-                "x":new_x,
-                "y":p["y"],
-                "w":p["pw"],
-                "h":p["ph"]
-            }
-            
-            for rect in self.solid_rects:
-                if self.rect_collide(player_rect,rect):
-                    if p["state"]=="movement":
-                        if p["dashvx"]>0:
-                            new_x=rect["x"]-p["pw"]
-                        elif dir_x<0:
-                            new_x=rect["x"]+rect["w"]
-                    else:
-                        if dir_x>0:
-                            new_x=rect["x"]-p["pw"]
-                        elif dir_x<0:
-                            new_x=rect["x"]+rect["w"]
-                    break
-            p["x"]=new_x
+                for rect in self.solid_rects:
+                    if self.rect_collide(player_rect,rect):
+                        if p["state"]=="movement":
+                            if p["dashvx"]>0:
+                                new_x=rect["x"]-p["pw"]
+                            elif dir_x<0:
+                                new_x=rect["x"]+rect["w"]
+                        else:
+                            if dir_x>0:
+                                new_x=rect["x"]-p["pw"]
+                            elif dir_x<0:
+                                new_x=rect["x"]+rect["w"]
+                        break
+                p["x"]=new_x
             #y軸移動
 
             if p["jump_cd"]>0:
@@ -465,8 +448,12 @@ class GameServer(threading.Thread):
 
 
             #skill
-            dx=mx-p["x"]-16
-            dy=my-p["y"]-16
+            if mx is None or my is None:
+                dx=p['dx']
+                dy=p['dy']
+            else:
+                dx=mx-p["x"]-16
+                dy=my-p["y"]-16
             p["dx"]=dx
             p["dy"]=dy
             D=math.hypot(dx,dy)
@@ -499,19 +486,48 @@ class GameServer(threading.Thread):
                         p["skill_count"][slot]=skill_using["amount"]
                     if skill_using["type"]=="movement":
                         p["skill_count"][slot]=skill_using.get("amount",1)
+                    if skill_using["type"]=="sword":
+                        p["skill_count"][slot]=skill_using.get("amount",1)
+            if p["alive"]:
+                for i in range(3):
+                    if p["skill_count"][i] and p["skill_timer"][i]==0:
+                        skill_using=SKILLS[p["skills"][i]-1]
+                        p["skill_count"][i]-=1
+                        p["skill_timer"][i]=skill_using["atkspeed"]
+                        if skill_using["type"]=="projectile":
+                            self.spawn_projectile(p,skill_using,wx,wy,p["skills"][i])
+                        if skill_using["type"]=="movement":
+                            self.use_movement_skill(skill_using,wx,wy,p["skill_count"][i],p)
+                        if skill_using["type"]=="sword":
+                            self.spawn_sowrd(skill_using,wx,wy,p,D)
+            
+        for proj in self.projectile:
+            if not proj["life"]:
+                continue
+            proj["vx"]+=proj["ax"]*dt
+            proj["vy"]+=proj["ay"]*dt
 
-            for i in range(3):
-                if p["skill_count"][i] and p["skill_timer"][i]==0:
-                    skill_using=SKILLS[p["skills"][i]-1]
-                    p["skill_count"][i]-=1
-                    p["skill_timer"][i]=skill_using["atkspeed"]
-                    if skill_using["type"]=="projectile":
-                        self.spawn_projectile(p,skill_using,wx,wy,p["skills"][i])
-                    if skill_using["type"]=="movement":
-                        self.use_movement_skill(skill_using,wx,wy,p["skill_count"][i],p)
+            proj["x"]+=proj["vx"]*dt
+            self.proj_x_collide(proj)
+
+            proj["y"]+=proj["vy"]*dt
+            self.proj_y_collide(proj)
+            for conn,player in self.players.items():
+                if player["id"]!=proj["owner"] and player['alive']:
+                    if self.circle_player_collide(proj,player):
+                        proj["life"]=0
+                        if not player["invincible"]:
+                            player["hp"]-=proj["dmg"]    
 
         self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()
+
+
+    def spawn_sowrd(self,skill,wx,wy,p,D):
+        if skill["name"]=="bigsword":
+            pass
+
+
 
     def use_movement_skill(self,skill,wx,wy,sk_count,p):
         skill_name=skill["name"]
@@ -527,10 +543,6 @@ class GameServer(threading.Thread):
                 p["state"]="normal" 
                 p["invincible"]=False    
             
-
-
-
-
     def spawn_projectile(self,p,skill,wx,wy,skill_id):
         
         a=skill.get("a",0)

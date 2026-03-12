@@ -378,13 +378,14 @@ class GameServer(threading.Thread):
                     dir_x=0
                     skill_key=None
                 #x軸移動
-                if p["state"]=="normal":
+                if p["state"]=="movement":
+                    new_x=p["x"]+p["dashvx"]*dt
+                elif p["state"]=="normal":
                     if dir_x!=0:
                         p["vx"]=P_SPEED
                     p["vx"]+=p["ax"]*dt
                     new_x=p["x"]+dir_x*p['vx']*dt
-                elif p["state"]=="movement":
-                    new_x=p["x"]+p["dashvx"]*dt
+                
                 
             player_rect={
                 "x":new_x,
@@ -507,6 +508,8 @@ class GameServer(threading.Thread):
                         p["skill_count"][slot]=skill_using.get("amount",1)
                     if skill_using["type"]=="sword":
                         p["skill_count"][slot]=skill_using.get("amount",1)
+                    if skill_using["type"]=="transform":
+                        p[skill_using][slot]=skill_using.get("amount",2)
             if p["alive"]:
                 for i in range(3):
                     if p["skill_count"][i] and p["skill_timer"][i]==0:
@@ -519,6 +522,8 @@ class GameServer(threading.Thread):
                             self.use_movement_skill(skill_using,wx,wy,p["skill_count"][i],p)
                         if skill_using["type"]=="sword":
                             self.spawn_sowrd(skill_using,wx,wy,p,D)
+                        if skill_using["type"]=="transform":
+                            self.use_transform(skill_using,p["skill_count"][i],p)
             
         for proj in self.projectile:
             if not proj["life"]:
@@ -543,6 +548,15 @@ class GameServer(threading.Thread):
 
         self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()
+
+    def use_transform(self,skill,sk_count,p):
+        if skill["name"]=="shrink":
+            if sk_count>0:
+                p["state"]="transform"
+                p["scale"]=skill["scale"]
+            else:
+                p["state"]="normal"
+                
 
 
     def spawn_sowrd(self,skill,wx,wy,p,D):

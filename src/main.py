@@ -315,7 +315,7 @@ def skillbar_creat():
             player.players[i]["skillbar"]=pygame.Surface((184,64))
             player.players[i]["skillbar"].blit(skill_bar,(0,0))
             for j in range(3):
-                    player.players[i]["skillbar"].blit(icons[player.players[i]["skills"][j]-1],(4+60*j,0))
+                    player.players[i]["skillbar"].blit(icons[player.players[i]["skills"][j]-1],(4+60*j,4))
         
 
 spacedown=False

@@ -83,6 +83,8 @@ class GameServer(threading.Thread):
                     "state":"normal",
                     "dashvx":0,
                     "dashvy":0,
+                    "dash_hit":True,
+                    "rect":None
                 }
 
                 
@@ -215,6 +217,11 @@ class GameServer(threading.Thread):
                 self.players[conn]["x"]=100
             else:
                 self.players[conn]["x"]=860
+            self.players[conn]["rect"]={"x":self.players[conn]["x"],
+                                            "y":self.players[conn]["y"],
+                                            "w":self.players[conn]["pw"],
+                                            "h":self.players[conn]["ph"]
+                                            }
         self.choose_map()
     def choose_map(self):
         self.now_map=random.choice(self.maps)
@@ -385,7 +392,7 @@ class GameServer(threading.Thread):
                 "w":p["pw"],
                 "h":p["ph"]
             }
-                
+            
             for rect in self.solid_rects:
                 if self.rect_collide(player_rect,rect):
                     if p["state"]=="movement":
@@ -445,9 +452,20 @@ class GameServer(threading.Thread):
                     break
             
             p['y']=new_y
+            p["rect"]=player_rect
 
-
-
+            if p["state"]=="movement" and not p["dash_hit"]:
+                for other in self.players.values():
+                    if other["id"]==p["id"]:
+                        continue
+                    if self.rect_collide(p["rect"],other["rect"]):
+                        if not other["invincible"] and other["alive"]:
+                            other["hp"]-=SKILLS[2]["dmg"]
+                            p["dash_hit"]=True
+                            if other["hp"]<=0:
+                                    other["alive"]=False
+                                    other["hp"]=0
+                            break
             #skill
             if mx is None or my is None:
                 dx=p['dx']
@@ -541,11 +559,13 @@ class GameServer(threading.Thread):
                 p["invincible"]=True
                 p["dashvx"]=wx*skill["speed"]
                 p["dashvy"]=wy*skill["speed"]
+                p["dash_hit"]=False
             else:
                 p["vx"]=p["dashvx"]*0.2
                 p["vy"]=p["dashvy"]*0.2   
                 p["state"]="normal" 
-                p["invincible"]=False    
+                p["invincible"]=False  
+                p["dash_hit"]=True  
             
     def spawn_projectile(self,p,skill,wx,wy,skill_id):
         

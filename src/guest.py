@@ -160,6 +160,12 @@ class GameClient(threading.Thread):
                 obj["y"]=pdata["y"]
                 obj["dx"]=pdata["dx"]
                 obj["dy"]=pdata["dy"]
+
+                obj["last_w"]=obj["pw"]
+                obj["last_h"]=obj["ph"]
+                
+                obj["pw"]=pdata["pw"]
+                obj["ph"]=pdata["ph"]
                 if self.players[pid]["alive"]==False:
                     obj["img"]="dead"
                     obj["alive"]=False
@@ -172,7 +178,11 @@ class GameClient(threading.Thread):
                     "dx":pdata["dx"],
                     "dy":pdata["dy"],
                     "img":None,
-                    "alive":True
+                    "alive":True,
+                    "pw":pdata["pw"],
+                    "ph":pdata["ph"],
+                    "last_w":pdata["pw"],
+                    "last_h":pdata["ph"]
                 })
         proj_ids=set()
         for proj_data in data["proj"]:

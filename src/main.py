@@ -50,6 +50,7 @@ fireballicon=pygame.image.load("assets/images/icons/fireballicon.png").convert_a
 bounceballicon=pygame.image.load("assets/images/icons/bounceballicon.png").convert_alpha()
 dashicon=pygame.image.load("assets/images/icons/dashicon.png").convert_alpha()
 lanceicon=pygame.image.load("assets/images/icons/lanceicon.png").convert_alpha()
+shrinkicon=pygame.image.load("assets/images/icons/shrinkicon.png").convert_alpha()
 
 player1img=pygame.image.load("assets/images/gameobjects/player1img.png").convert()
 player2img=pygame.image.load("assets/images/gameobjects/player2img.png").convert()
@@ -67,7 +68,7 @@ screen_state="main menu"
 focused_index=0
 input_box=[]
 icons=[fireballicon,bounceballicon,dashicon,lanceicon,
-       fireballicon,bounceballicon,dashicon,lanceicon,
+       shrinkicon,bounceballicon,dashicon,lanceicon,
        fireballicon,bounceballicon,dashicon,lanceicon,
        fireballicon,bounceballicon,dashicon,lanceicon,
        fireballicon,bounceballicon,dashicon,lanceicon,
@@ -257,18 +258,29 @@ def draw_game_objects():
     if player.mapSurf:
         gameSurface.blit(player.mapSurf,(-32,-32))
     for obj in player.gameobjects:
-        if obj['type']=="player" and (obj["img"] is None or obj["img"]=="dead"):
-            if obj["pid"]==1:
-                if obj["img"]=="dead":
-                    obj["img"]=p1dead
+        if obj['type']=="player":
+            if  (obj["img"] is None or obj["img"]=="dead"):
+                if obj["pid"]==1:
+                    if obj["img"]=="dead":
+                        obj["img"]=pygame.transform.smoothscale(p1dead,(obj["pw"],obj["ph"]))
+                    else:
+                        obj["img"]=pygame.transform.smoothscale(player1img,(obj["pw"],obj["ph"]))
                 else:
-                    obj["img"]=player1img
-            else:
-                if obj["img"]=="dead":
-                    obj["img"]=p2dead
+                    if obj["img"]=="dead":
+                        obj["img"]=pygame.transform.smoothscale(p2dead,(obj["pw"],obj["ph"]))
+                    else:
+                        obj["img"]=pygame.transform.smoothscale(player2img,(obj["pw"],obj["ph"]))
+            if (obj["last_w"]!=obj["pw"] or obj["last_h"]!=obj["ph"]):
+                if obj["pid"]==1:
+                    if obj["img"]=="dead":
+                        obj["img"]=pygame.transform.smoothscale(p1dead,(obj["pw"],obj["ph"]))
+                    else:
+                        obj["img"]=pygame.transform.smoothscale(player1img,(obj["pw"],obj["ph"]))
                 else:
-                    obj["img"]=player2img
-            
+                    if obj["img"]=="dead":
+                        obj["img"]=pygame.transform.smoothscale(p2dead,(obj["pw"],obj["ph"]))
+                    else:
+                        obj["img"]=pygame.transform.smoothscale(player2img,(obj["pw"],obj["ph"]))
         if obj["type"]=="projectile" and obj["hitbox"]=="circle":
             r=obj.get("r",5)
             pcolor=(100,100,255) if obj["owner"]==player.player_id else (255,50,50)
@@ -282,14 +294,14 @@ def draw_game_objects():
         if obj['type']=="player":
             obj["dx"]=min(4,max(obj["dx"],-4))
             obj["dy"]=min(5,max(obj["dy"],-7))
-            p_eye_rect=p_eye.get_rect(center=(obj["x"]+16+obj["dx"],obj["y"]+16+obj["dy"]))
+            p_eye_rect=p_eye.get_rect(center=(obj["x"]+obj["pw"]/2+obj["dx"],obj["y"]+obj["ph"]/2+obj["dy"]))
             if obj["alive"]:
                 gameSurface.blit(p_eye,p_eye_rect)
     gameSurface.blit(healthbarimg,(0,0))
     if len(player.players)>=2:
         for i in range(1,3):
             hp=player.players[i].get("hp")
-            hptxt=font.render(f"{hp}",False,(0,0,0))
+            hptxt=font.render(f"{round(hp)}",False,(0,0,0))
             hpw=hptxt.get_width()
             if i==1:
                 hpx=int(13+hpw/2)

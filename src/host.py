@@ -6,7 +6,7 @@ import time
 import os
 import random
 import math
-from constnums import SKILLS,P_SPEED,GRAVITY,JUMP_CD,JUMP_SPEED,MAX_JUMP_COUNT
+from constnums import SKILLS,P_SPEED,GRAVITY,JUMP_CD,JUMP_SPEED,MAX_JUMP_COUNT,PLAYER_BSAE_SIZE
 
 last_time=time.time()
 
@@ -73,6 +73,7 @@ class GameServer(threading.Thread):
                     "double_jump":0,
                     "on_ground":False,
                     "id":player_id,
+                    "conn":conn,
                     "skills":[1,2,3],
                     "skill_cd":[0,0,0],
                     "skill_count":[0,0,0],
@@ -84,7 +85,9 @@ class GameServer(threading.Thread):
                     "dashvx":0,
                     "dashvy":0,
                     "dash_hit":True,
-                    "rect":None
+                    "rect":None,
+                    "scale":1,
+                    "last_scale":1
                 }
 
                 
@@ -364,6 +367,23 @@ class GameServer(threading.Thread):
         return False
     def world_update(self,dt):
         for conn,p in self.players.items():
+            old_x,old_y=p["x"],p["y"]
+            if p["scale"]!=p["last_scale"]:
+                center_x=p["x"]+p["pw"]/2
+                center_y=p["y"]+p["ph"]/2
+                p["pw"]=p["scale"]*PLAYER_BSAE_SIZE
+                p["ph"]=p["scale"]*PLAYER_BSAE_SIZE
+                p["x"]=center_x-p["pw"]/2
+                p["y"]=center_y-p["ph"]/2
+            
+            player_rect={
+                "x":p["x"],
+                "y":p["y"],
+                "w":p["pw"],
+                "h":p["ph"]
+            }
+
+
             if p["can_move"]:
                 inp=self.clients[conn].get("inputs",{})
                 self.clients[conn]["inputs"]={}
@@ -384,15 +404,9 @@ class GameServer(threading.Thread):
                     if dir_x!=0:
                         p["vx"]=P_SPEED
                     p["vx"]+=p["ax"]*dt
-                    new_x=p["x"]+dir_x*p['vx']*dt
+                    new_x=p["x"]+dir_x*p['vx']*dt/p["scale"]
                 
-                
-            player_rect={
-                "x":new_x,
-                "y":p["y"],
-                "w":p["pw"],
-                "h":p["ph"]
-            }
+            player_rect["x"]=new_x
             
             for rect in self.solid_rects:
                 if self.rect_collide(player_rect,rect):
@@ -408,6 +422,8 @@ class GameServer(threading.Thread):
                             new_x=rect["x"]+rect["w"]
                     break
             p["x"]=new_x
+            player_rect["x"]=p["x"]
+
             #y軸移動
 
             if p["jump_cd"]>0:
@@ -426,11 +442,10 @@ class GameServer(threading.Thread):
                     p["jump_cd"]=JUMP_CD
             if p["state"]=="normal":
                 p["vy"]+=GRAVITY*dt
-                new_y=p["y"]+p['vy']*dt
+                new_y=p["y"]+p['vy']*dt/p["scale"]
             elif p["state"]=="movement":
                 new_y=p["y"]+p["dashvy"]*dt
 
-            player_rect["x"]=new_x
             player_rect["y"]=new_y
 
             for rect in self.solid_rects:
@@ -454,14 +469,14 @@ class GameServer(threading.Thread):
             
             p['y']=new_y
             p["rect"]=player_rect
-
+            p["last_scale"]=p["scale"]
             if p["state"]=="movement" and not p["dash_hit"]:
                 for other in self.players.values():
                     if other["id"]==p["id"]:
                         continue
                     if self.rect_collide(p["rect"],other["rect"]):
                         if not other["invincible"] and other["alive"]:
-                            other["hp"]-=SKILLS[2]["dmg"]
+                            other["hp"]-=SKILLS[2]["dmg"]*other["scale"]
                             p["dash_hit"]=True
                             if other["hp"]<=0:
                                     other["alive"]=False
@@ -509,7 +524,7 @@ class GameServer(threading.Thread):
                     if skill_using["type"]=="sword":
                         p["skill_count"][slot]=skill_using.get("amount",1)
                     if skill_using["type"]=="transform":
-                        p[skill_using][slot]=skill_using.get("amount",2)
+                        p["skill_count"][slot]=skill_using.get("amount",2)
             if p["alive"]:
                 for i in range(3):
                     if p["skill_count"][i] and p["skill_timer"][i]==0:
@@ -541,7 +556,7 @@ class GameServer(threading.Thread):
                     if self.circle_player_collide(proj,player):
                         proj["life"]=0
                         if not player["invincible"] and player["alive"]:
-                            player["hp"]-=proj["dmg"]    
+                            player["hp"]-=proj["dmg"]*self.players[proj["owner_conn"]]["scale"]    
                             if player["hp"]<=0:
                                 player["alive"]=False
                                 player["hp"]=0
@@ -552,11 +567,11 @@ class GameServer(threading.Thread):
     def use_transform(self,skill,sk_count,p):
         if skill["name"]=="shrink":
             if sk_count>0:
-                p["state"]="transform"
-                p["scale"]=skill["scale"]
+                #p["state"]="transform"
+                p["scale"]*=skill["scale"]
             else:
-                p["state"]="normal"
-                
+                #p["state"]="normal"
+                p["scale"]/=skill["scale"]
 
 
     def spawn_sowrd(self,skill,wx,wy,p,D):
@@ -596,7 +611,8 @@ class GameServer(threading.Thread):
             "owner":p["id"],
             "skill_id":skill_id,
             "life":skill.get("bounces",1),
-            "r":skill.get("hitbox_rad",None)
+            "r":skill.get("hitbox_rad",None),
+            "owner_conn":p["conn"]
         }
         self.next_projectile_id+=1
         self.projectile.append(proj)
@@ -622,7 +638,9 @@ class GameServer(threading.Thread):
                 "dx":p["dx"],
                 "dy":p["dy"],
                 "skill_cd":p["skill_cd"],
-                "hp":p["hp"]
+                "hp":p["hp"],
+                "pw":p["pw"],
+                "ph":p["ph"]
             })
         for proj in self.projectile:
             snapshot_proj.append({

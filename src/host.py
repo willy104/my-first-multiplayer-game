@@ -384,6 +384,31 @@ class GameServer(threading.Thread):
             }
 
 
+            for rect in self.solid_rects:
+                if self.rect_collide(player_rect,rect):
+                    dx_left=(rect["x"]-(p["x"]+p["pw"]))
+                    dx_right=((rect["x"]+rect["w"])-p["x"])
+                    dy_top=(rect["y"]-(p["y"]+p["ph"]))
+                    dy_bottom=((rect["y"]+rect["h"])-p["y"])
+
+                    min_fix=min(
+                        abs(dx_left),abs(dx_right),
+                        abs(dy_top),abs(dy_bottom)
+                    )
+
+                    if min_fix==abs(dx_left):
+                        p["x"]+=dx_left
+                    elif min_fix==abs(dx_right):
+                        p["x"]+=dx_right
+                    elif min_fix==abs(dy_top):
+                        p["y"]+=dy_top
+                    else:
+                        p["y"]+=dy_bottom
+
+                    player_rect["x"]=p["x"]
+                    player_rect["y"]=p["y"]
+
+            new_x=p["x"]
             if p["can_move"]:
                 inp=self.clients[conn].get("inputs",{})
                 self.clients[conn]["inputs"]={}
@@ -413,7 +438,7 @@ class GameServer(threading.Thread):
                     if p["state"]=="movement":
                         if p["dashvx"]>0:
                             new_x=rect["x"]-p["pw"]
-                        elif dir_x<0:
+                        elif p["dashvx"]<0:
                             new_x=rect["x"]+rect["w"]
                     else:
                         if dir_x>0:

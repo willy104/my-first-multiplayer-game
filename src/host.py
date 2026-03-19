@@ -501,7 +501,7 @@ class GameServer(threading.Thread):
                         continue
                     if self.rect_collide(p["rect"],other["rect"]):
                         if not other["invincible"] and other["alive"]:
-                            other["hp"]-=SKILLS[2]["dmg"]*other["scale"]
+                            other["hp"]-=SKILLS[2]["dmg"]*p["scale"]
                             p["dash_hit"]=True
                             if other["hp"]<=0:
                                     other["alive"]=False
@@ -608,7 +608,7 @@ class GameServer(threading.Thread):
     def use_movement_skill(self,skill,wx,wy,sk_count,p):
         skill_name=skill["name"]
         if skill_name=="dash":
-            if sk_count>0:
+            if sk_count%2:
                 p["state"]="movement"
                 p["invincible"]=True
                 p["dashvx"]=wx*skill["speed"]

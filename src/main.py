@@ -335,6 +335,7 @@ mx,my=0,0
 def move_inputs(): 
     global spacedown,mx,my
     keys=pygame.key.get_pressed()
+    mouse_button=pygame.mouse.get_pressed()
     mx,my=pygame.mouse.get_pos()
     move_x=0
     jump=False
@@ -352,11 +353,11 @@ def move_inputs():
     else:
         spacedown=False
     
-    if keys[pygame.K_q]:
+    if mouse_button[0]:
         skill_key=1
-    elif keys[pygame.K_w]:
+    elif mouse_button[1]:
         skill_key=2
-    elif keys[pygame.K_e]:
+    elif mouse_button[2]:
         skill_key=3
     
 

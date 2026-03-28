@@ -207,7 +207,7 @@ class GameClient(threading.Thread):
                     "skill_id":proj_data["skill_id"],
                     "img":None,
                     "life":proj_data["life"],
-                    "hitbox":SKILLS[proj_data["skill_id"]-1].get("hitbox")
+                    "hitbox":proj_data.get("hitbox",SKILLS[proj_data["skill_id"]-1].get("hitbox"))
                 })
         self.gameobjects=[o for o in self.gameobjects 
                           if o.get("type") != "projectile" 

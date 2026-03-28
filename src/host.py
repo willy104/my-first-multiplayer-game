@@ -566,26 +566,45 @@ class GameServer(threading.Thread):
                             self.use_transform(skill_using,p["skill_count"][i],p)
             
         for proj in self.projectile:
+            if proj["type"]=="explosion":
+                proj["life"]-=dt
+                if proj["life"]<=0:
+                    proj["life"]=0
+                                
             if not proj["life"]:
                 continue
-            proj["vx"]+=proj["ax"]*dt
-            proj["vy"]+=proj["ay"]*dt
+            if proj["type"]=="bullet":
+                proj["vx"]+=proj["ax"]*dt
+                proj["vy"]+=proj["ay"]*dt
 
-            proj["x"]+=proj["vx"]*dt
-            self.proj_x_collide(proj)
+                proj["x"]+=proj["vx"]*dt
+                self.proj_x_collide(proj)
 
-            proj["y"]+=proj["vy"]*dt
-            self.proj_y_collide(proj)
+                proj["y"]+=proj["vy"]*dt
+                self.proj_y_collide(proj)
+
+            if not proj["life"] and SKILLS[proj["skill_id"]-1].get("explode",False):
+                self.spawn_explosion(SKILLS[proj["skill_id"]-1],proj["x"],proj["y"],proj["skill_id"])
+                print(SKILLS[proj["skill_id"]-1].get("explode",False))
             for conn,player in self.players.items():
-                if player["id"]!=proj["owner"]:
+                if player["id"]!=proj.get("owner",None):
                     if self.circle_player_collide(proj,player):
-                        proj["life"]=0
-                        if not player["invincible"] and player["alive"]:
-                            player["hp"]-=proj["dmg"]*self.players[proj["owner_conn"]]["scale"]    
-                            if player["hp"]<=0:
-                                player["alive"]=False
-                                player["hp"]=0
+                        if proj["type"]=="bullet":
+                            proj["life"]=0
+                            if SKILLS[proj["skill_id"]-1].get("explode",False):
+                                self.spawn_explosion(SKILLS[proj["skill_id"]-1],proj["x"],proj["y"],proj["skill_id"])
+                            if not player["invincible"] and player["alive"]:
+                                player["hp"]-=proj["dmg"]
+                                
+                        elif proj["type"]=="explosion":
+                            if proj["hit"]== 3 or proj["hit"]==player["id"] and not player["invincible"]:
+                                proj["hit"]-=player["id"]
+                                if player["alive"]:
+                                    player["hp"]-=proj["dmg"]
 
+            if player["hp"]<=0:
+                player["alive"]=False
+                player["hp"]=0
         self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()
 
@@ -599,7 +618,7 @@ class GameServer(threading.Thread):
                 p["scale"]/=skill["scale"]
 
 
-    def spawn_sowrd(self,skill,wx,wy,p,D):
+    def spawn_sowrd(self,skill,x,y,p,D):
         if skill["name"]=="bigsword":
             pass
 
@@ -620,11 +639,34 @@ class GameServer(threading.Thread):
                 p["state"]="normal" 
                 p["invincible"]=False  
                 p["dash_hit"]=True  
-            
+    
+    def spawn_explosion(self,skill,x,y,skill_id):
+        exp_proj={
+            "type":"explosion",
+            "id":self.next_projectile_id,
+            "x":x,
+            "y":y,
+            "vx":0,
+            "vy":0,
+            "ax":0,
+            "ay":0,
+            "dmg":skill.get("exp_dmg",0),
+            #"owner":p["id"],
+            "skill_id":skill_id,
+            "life":skill.get("exp_life",1),
+            "r":skill.get("exp_r",5),
+            "hit":3,
+            "owner_conn":None
+        }
+
+        self.next_projectile_id+=1
+        self.projectile.append(exp_proj)
+
     def spawn_projectile(self,p,skill,wx,wy,skill_id):
         
         a=skill.get("a",0)
         proj={
+            "type":"bullet",
             "id":self.next_projectile_id,
             "x":p["x"]+p["pw"]/2,
             "y":p["y"]+p["ph"]/2,
@@ -632,7 +674,7 @@ class GameServer(threading.Thread):
             "vy":skill["speed"]*wy,
             "ax":a*wx,
             "ay":a*wy,
-            "dmg":skill["dmg"],
+            "dmg":skill["dmg"]*p["scale"],
             "owner":p["id"],
             "skill_id":skill_id,
             "life":skill.get("bounces",1),
@@ -672,7 +714,7 @@ class GameServer(threading.Thread):
                 "id":proj["id"],
                 "x":proj["x"],
                 "y":proj["y"],
-                "owner":proj["owner"],
+                "owner":proj.get("owner",None),
                 "skill_id":proj["skill_id"],
                 "life":proj["life"],
                 "r":proj["r"]

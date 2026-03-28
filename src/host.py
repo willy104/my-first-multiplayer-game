@@ -570,7 +570,9 @@ class GameServer(threading.Thread):
                 proj["life"]-=dt
                 if proj["life"]<=0:
                     proj["life"]=0
-                                
+                proj['r']+=proj["dr"]*dt/proj["Mlife"]
+                proj["alpha"]=int(255*(proj["life"]/proj["Mlife"]))
+                            
             if not proj["life"]:
                 continue
             if proj["type"]=="bullet":
@@ -584,7 +586,7 @@ class GameServer(threading.Thread):
                 self.proj_y_collide(proj)
 
             if not proj["life"] and SKILLS[proj["skill_id"]-1].get("explode",False):
-                self.spawn_explosion(SKILLS[proj["skill_id"]-1],proj["x"],proj["y"],proj["skill_id"])
+                self.spawn_explosion(SKILLS[proj["skill_id"]-1],proj["x"],proj["y"],proj["r"],proj["skill_id"])
                 print(SKILLS[proj["skill_id"]-1].get("explode",False))
             for conn,player in self.players.items():
                 if player["id"]!=proj.get("owner",None):
@@ -592,7 +594,7 @@ class GameServer(threading.Thread):
                         if proj["type"]=="bullet":
                             proj["life"]=0
                             if SKILLS[proj["skill_id"]-1].get("explode",False):
-                                self.spawn_explosion(SKILLS[proj["skill_id"]-1],proj["x"],proj["y"],proj["skill_id"])
+                                self.spawn_explosion(SKILLS[proj["skill_id"]-1],proj["x"],proj["y"],proj["r"],proj["skill_id"])
                             if not player["invincible"] and player["alive"]:
                                 player["hp"]-=proj["dmg"]
                                 
@@ -640,7 +642,7 @@ class GameServer(threading.Thread):
                 p["invincible"]=False  
                 p["dash_hit"]=True  
     
-    def spawn_explosion(self,skill,x,y,skill_id):
+    def spawn_explosion(self,skill,x,y,r,skill_id):
         exp_proj={
             "type":"explosion",
             "id":self.next_projectile_id,
@@ -654,9 +656,12 @@ class GameServer(threading.Thread):
             #"owner":p["id"],
             "skill_id":skill_id,
             "life":skill.get("exp_life",1),
-            "r":skill.get("exp_r",5),
+            "Mlife":skill.get("exp_life",1),
+            "r":r,
+            "dr":skill.get("exp_r",30)-r,
             "hit":3,
-            "owner_conn":None
+            "owner_conn":None,
+            "alpha":255
         }
 
         self.next_projectile_id+=1
@@ -711,13 +716,15 @@ class GameServer(threading.Thread):
             })
         for proj in self.projectile:
             snapshot_proj.append({
+                "type":proj["type"],
                 "id":proj["id"],
                 "x":proj["x"],
                 "y":proj["y"],
                 "owner":proj.get("owner",None),
                 "skill_id":proj["skill_id"],
                 "life":proj["life"],
-                "r":proj["r"]
+                "r":proj["r"],
+                "alpha":proj.get("alpha",None)
             })
         self.broadcast({
             "type":"world_state",

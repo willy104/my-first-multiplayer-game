@@ -190,19 +190,22 @@ class GameClient(threading.Thread):
             proj_ids.add(proj_id)
 
             obj=next((o for o in self.gameobjects 
-                      if o.get("type")=="projectile" and o.get("id")==proj_id),None)
+                      if o.get("type") in ("bullet","explosion") and o.get("id")==proj_id),None)
 
             if obj:
                 obj["x"]=proj_data["x"]
                 obj["y"]=proj_data["y"]
                 obj["life"]=proj_data["life"]
+                obj["r"]=proj_data["r"]
+                obj["alpha"]=proj_data.get("alpha",255)
             else:
                 self.gameobjects.append({
-                    "type":"projectile",
+                    "type":proj_data["type"],
                     "id":proj_data["id"],
                     "x":proj_data["x"],
                     "y":proj_data["y"],
                     "r":proj_data["r"],
+                    "alpha":proj_data["alpha"],
                     "owner":proj_data["owner"],
                     "skill_id":proj_data["skill_id"],
                     "img":None,
@@ -210,7 +213,7 @@ class GameClient(threading.Thread):
                     "hitbox":proj_data.get("hitbox",SKILLS[proj_data["skill_id"]-1].get("hitbox"))
                 })
         self.gameobjects=[o for o in self.gameobjects 
-                          if o.get("type") != "projectile" 
+                          if o.get("type") != "bullet" and o.get("type") != "explosion"
                           or o.get("id") in proj_ids
                         ]
     def on_game_start(self):

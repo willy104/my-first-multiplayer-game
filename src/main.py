@@ -281,10 +281,17 @@ def draw_game_objects():
                         obj["img"]=pygame.transform.smoothscale(p2dead,(obj["pw"],obj["ph"]))
                     else:
                         obj["img"]=pygame.transform.smoothscale(player2img,(obj["pw"],obj["ph"]))
-        if obj["type"]=="projectile" and obj["hitbox"]=="circle":
+        if obj["type"]=="bullet" and obj["hitbox"]=="circle":
             r=obj.get("r",5)
             pcolor=(100,100,255) if obj["owner"]==player.player_id else (255,50,50)
             pygame.draw.circle(gameSurface,pcolor,(int(obj["x"]),int(obj["y"])),r)
+        elif obj["type"]=="explosion":
+            r=obj.get("r",5)
+            alpha=obj.get("alpha",0)
+            exp_surf=pygame.Surface((2*r,2*r),pygame.SRCALPHA)
+            pcolor=(255,50,50,alpha)
+            pygame.draw.circle(exp_surf,pcolor,(r,r),r)
+            gameSurface.blit(exp_surf,(obj["x"]-r,obj["y"]-r))
         '''if obj['type']=="projectile" and obj["img"] is None:
             obj["img"]=skill_img.get(obj["skill_id"])'''
         

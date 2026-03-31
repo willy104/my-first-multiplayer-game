@@ -418,7 +418,7 @@ def main():
                                     handle_confirm()
                                 elif name=="cancel":
                                     input_box=[]
-                                    focused_index=0
+                                    focused_index=0 
                                     chart=False
                                     open_chart=False
             if screen_state=="in game":

@@ -62,6 +62,8 @@ class GameServer(threading.Thread):
                     "y":300,
                     "vx":P_SPEED,
                     "vy":0,
+                    "knock_back_vx":0,
+                    "knock_back_vy":0,
                     "ax":0,
                     "ay":0,
                     "pw":32,
@@ -429,8 +431,9 @@ class GameServer(threading.Thread):
                     if dir_x!=0:
                         p["vx"]=P_SPEED
                     p["vx"]+=p["ax"]*dt
-                    new_x=p["x"]+dir_x*p['vx']*dt/p["scale"]
-                
+                    final_vx=dir_x*p["vx"]/p["scale"]+p["knock_back_vx"]
+                    new_x=p["x"]+final_vx*dt
+            p["knock_back_vx"]-=p["knock_back_vx"]*6*dt    
             player_rect["x"]=new_x
             
             for rect in self.solid_rects:
@@ -441,9 +444,9 @@ class GameServer(threading.Thread):
                         elif p["dashvx"]<0:
                             new_x=rect["x"]+rect["w"]
                     else:
-                        if dir_x>0:
+                        if final_vx>0:
                             new_x=rect["x"]-p["pw"]
-                        elif dir_x<0:
+                        elif final_vx<0:
                             new_x=rect["x"]+rect["w"]
                     break
             p["x"]=new_x
@@ -467,12 +470,13 @@ class GameServer(threading.Thread):
                     p["jump_cd"]=JUMP_CD
             if p["state"]=="normal":
                 p["vy"]+=GRAVITY*dt
-                new_y=p["y"]+p['vy']*dt/p["scale"]
+                final_vy=p["vy"]/p["scale"]+p["knock_back_vy"]
+                new_y=p["y"]+final_vy*dt
             elif p["state"]=="movement":
                 new_y=p["y"]+p["dashvy"]*dt
 
             player_rect["y"]=new_y
-
+            p["knock_back_vy"]-=p["knock_back_vy"]*6*dt
             for rect in self.solid_rects:
                 if self.rect_collide(player_rect,rect):
                     if p["state"]=="movement":
@@ -483,11 +487,11 @@ class GameServer(threading.Thread):
                         elif p["dashvy"]<0:
                             new_y=rect["y"]+rect["h"]
                     else:
-                        if p["vy"]>0:
+                        if final_vy>0:
                             p["on_ground"]=True
                             p["double_jump"]=0
                             new_y=rect["y"]-p["ph"]
-                        elif p["vy"]<0:
+                        elif final_vy<0:
                             new_y=rect["y"]+rect["h"]
                     p["vy"]=0
                     break
@@ -599,14 +603,36 @@ class GameServer(threading.Thread):
                                 player["hp"]-=proj["dmg"]
                                 
                         elif proj["type"]=="explosion":
-                            if proj["hit"]== 3 or proj["hit"]==player["id"] and not player["invincible"]:
-                                proj["hit"]-=player["id"]
-                                if player["alive"]:
+                            if player["id"] not in proj["hit_players"]:
+                                
+                                if not player["invincible"] and player["alive"]:
                                     player["hp"]-=proj["dmg"]
+                                    proj["hit_players"].add(player["id"])
 
-            if player["hp"]<=0:
-                player["alive"]=False
-                player["hp"]=0
+                                    px=player["x"]+p["pw"]/2
+                                    py=player["y"]+p["ph"]/2
+
+                                    dx=px-proj["x"]
+                                    dy=py-proj["y"]
+                      
+                                    D=math.hypot(dx,dy)
+
+                                    if D>0:
+                                        nx=dx/D
+                                        ny=dy/D
+                                        
+                                    else:
+                                        nx,ny=0,0
+                                    ratio=max(0,1-(D/proj["Mr"]))
+
+                                    force=proj.get("knock_back",300)   
+
+                                    player["knock_back_vx"] += nx * force * ratio
+                                    player["knock_back_vy"] += ny * force * ratio
+
+                                    if player["hp"]<=0:
+                                        player["alive"]=False
+                                        player["hp"]=0
         self.projectile[:]=[p for p in self.projectile if p["life"]]
         self.broadcast_world_state()
 
@@ -659,9 +685,11 @@ class GameServer(threading.Thread):
             "Mlife":skill.get("exp_life",1),
             "r":r,
             "dr":skill.get("exp_r",30)-r,
-            "hit":3,
+            "Mr":skill.get("exp_r",30),
+            "hit_players":set(),
             "owner_conn":None,
-            "alpha":255
+            "alpha":255,
+            "knock_back":800
         }
 
         self.next_projectile_id+=1

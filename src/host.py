@@ -221,7 +221,7 @@ class GameServer(threading.Thread):
             if self.players[conn]["id"]==1:
                 self.players[conn]["x"]=100
             else:
-                self.players[conn]["x"]=860
+                self.players[conn]["x"]=828
             self.players[conn]["rect"]={"x":self.players[conn]["x"],
                                             "y":self.players[conn]["y"],
                                             "w":self.players[conn]["pw"],
@@ -433,7 +433,7 @@ class GameServer(threading.Thread):
                     p["vx"]+=p["ax"]*dt
                     final_vx=dir_x*p["vx"]/p["scale"]+p["knock_back_vx"]
                     new_x=p["x"]+final_vx*dt
-            p["knock_back_vx"]-=p["knock_back_vx"]*6*dt    
+            p["knock_back_vx"]-=p["knock_back_vx"]*4*dt    
             player_rect["x"]=new_x
             
             for rect in self.solid_rects:
@@ -476,7 +476,7 @@ class GameServer(threading.Thread):
                 new_y=p["y"]+p["dashvy"]*dt
 
             player_rect["y"]=new_y
-            p["knock_back_vy"]-=p["knock_back_vy"]*6*dt
+            p["knock_back_vy"]-=p["knock_back_vy"]*4*dt
             for rect in self.solid_rects:
                 if self.rect_collide(player_rect,rect):
                     if p["state"]=="movement":
@@ -516,8 +516,8 @@ class GameServer(threading.Thread):
                 dx=p['dx']
                 dy=p['dy']
             else:
-                dx=mx-p["x"]-16
-                dy=my-p["y"]-16
+                dx=mx-p["x"]-p["pw"]/2
+                dy=my-p["y"]-p["ph"]/2
             p["dx"]=dx
             p["dy"]=dy
             D=math.hypot(dx,dy)
@@ -609,8 +609,8 @@ class GameServer(threading.Thread):
                                     player["hp"]-=proj["dmg"]
                                     proj["hit_players"].add(player["id"])
 
-                                    px=player["x"]+p["pw"]/2
-                                    py=player["y"]+p["ph"]/2
+                                    px=player["x"]+player["pw"]/2
+                                    py=player["y"]+player["ph"]/2
 
                                     dx=px-proj["x"]
                                     dy=py-proj["y"]

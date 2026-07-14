@@ -21,7 +21,7 @@ class InputBox:
                 if event.key==pygame.K_BACKSPACE:
                     self.text=self.text[:-1]
                 else:
-                    if event.unicode.isalnum():
+                    if event.unicode.isalnum() or event.unicode==".":
                         if len(self.text)<15:
                             self.text+=event.unicode
     def update(self):

@@ -1,4 +1,5 @@
 import pygame
+import ipaddress
 from input_box import InputBox
 from host import GameServer
 from guest import GameClient
@@ -210,12 +211,21 @@ def select_skill(event):
                                 }})
 
 
+def is_valid_ip(ip):
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except:
+        return False
+
 def handle_confirm():
     global screen_state,server,player
     if ty:
-        #ip=input_box[0].text
-        ip="25.22.201.174"
-        #ip="25.4.29.65"
+        if input_box[0].text:
+            ip="25.3.73.112"
+        else:
+            ip="25.3.73.112"
+        #ip="25.4.29.65" 
         player=GameClient(ip)
         if player:
             screen_state="ready"
